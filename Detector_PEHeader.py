@@ -30,28 +30,28 @@ def get_peHeader_features(path, hasher):
     # string_features = {}
     # for string in strings:
     #     string_features[string] = 1
-    peHeader_features = {}
+    peHeader_features = []
     try:
         pe = pefile.PE(path)
     except pefile.PEFormatError:
-        pass
+        return [0]*30
     else:
         if hasattr(pe, 'OPTIONAL_HEADER'):
             oh=str(pe.OPTIONAL_HEADER)
             for line in oh.split('\n')[1:]:
-                peHeader_features[line.split()[2][:-1]] = int(line.split()[3][2:].lower(),16)
+                peHeader_features+= [int(line.split()[3][2:].lower(),16)]
 
     # hash the features using the hashing trick
-    hashed_features = hasher.transform([peHeader_features])
+    # hashed_features = hasher.transform([peHeader_features])
 
     # do some data munging to get the feature array
-    hashed_features = hashed_features.todense()
-    hashed_features = numpy.asarray(hashed_features)
-    hashed_features = hashed_features[0]
+    # hashed_features = hashed_features.todense()
+    # hashed_features = numpy.asarray(hashed_features)
+    # hashed_features = hashed_features[0]
     #print("Finished Extract String Feature")
     # return hashed string features
     print("Extracted {0} strings from {1}".format(len(peHeader_features), path))
-    return hashed_features
+    return peHeader_features
 
 
 # 扫描并判断正邪
