@@ -52,7 +52,7 @@ def get_iat_features(path, hasher):
     hashed_features = hashed_features[0]
     #print("Finished Extract String Feature")
     # return hashed string features
-    print("Extracted {0} IATs from {1}".format(len(iat_features), path))
+    print("Extracted {0} strings from {1}".format(len(iat_features), path))
     return hashed_features
 
 
