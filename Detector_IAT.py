@@ -14,25 +14,37 @@ from sklearn.feature_extraction import FeatureHasher
 
 import pefile
 
-
-def get_string_features(path,hasher):
+# 获取文件相关数据
+def get_iat_features(path,hasher):
     # extract strings from binary file using regular expressions
-    chars = r" -~"
-    min_length = 5
+    # chars = r" -~"
+    # min_length = 5
     #string_regexp = '[%s]{%d,}' % (chars, min_length)
-    string_regexp = b'[" -~"]{5,}'
-    file_object = open(path,"rb")
-    data = file_object.read()
-    pattern = re.compile(string_regexp)
-    strings = pattern.findall(data)
+    # string_regexp = b'[" -~"]{5,}'
+    # file_object = open(path,"rb")
+    # data = file_object.read()
+    # pattern = re.compile(string_regexp)
+    # strings = pattern.findall(data)
     #print(len(strings))
     # store string features in dictionary form
-    string_features = {}
-    for string in strings:
-        string_features[string] = 1
+    # string_features = {}
+    # for string in strings:
+    #     string_features[string] = 1
+    iat_features={}
+    try:
+        pe = pefile.PE(path)
+    except pefile.PEFormatError:
+        pass
+    else:
+        if hasattr(pe,'DIRECTORY_ENTRY_IMPORT'):
+            for entry in pe.DIRECTORY_ENTRY_IMPORT:
+                # print(entry.dll)
+                for imp in entry.imports:
+                    # print('\t', hex(imp.address), imp.name,type(imp.name))
+                    iat_features[str(imp.name)]=1
 
     # hash the features using the hashing trick
-    hashed_features = hasher.transform([string_features])
+    hashed_features = hasher.transform([iat_features])
 
     # do some data munging to get the feature array
     hashed_features = hashed_features.todense()
@@ -40,9 +52,10 @@ def get_string_features(path,hasher):
     hashed_features = hashed_features[0]
     #print("Finished Extract String Feature")
     # return hashed string features
-    print("Extracted {0} strings from {1}".format(len(string_features),path))
+    print("Extracted {0} IATs from {1}".format(len(iat_features),path))
     return hashed_features
 
+# 扫描并判断正邪
 def scan_file(path):
     # scan a file to determine if it is malicious or benign
     if not os.path.exists("saved_detector.pkl"):
@@ -50,7 +63,7 @@ def scan_file(path):
         sys.exit(1)
     with open("saved_detector.pkl","rb") as saved_detector:
         classifier, hasher = pickle.load(saved_detector)
-    features = get_string_features(path,hasher)
+    features = get_iat_features(path,hasher)
     result_proba = classifier.predict_proba([features])[:,1]
     # if the user specifies malware_paths and benignware_paths, train a detector
     if result_proba > 0.5:
@@ -58,6 +71,7 @@ def scan_file(path):
     else:
         print("It appears this file is benign.",result_proba)
 
+# 利用数据训练分类器
 def train_detector(benign_path,malicious_path,hasher):
     # train the detector on the specified training data
     def get_training_paths(directory):
@@ -68,7 +82,7 @@ def train_detector(benign_path,malicious_path,hasher):
     malicious_paths = get_training_paths(malicious_path)
     benign_paths = get_training_paths(benign_path)
     print("Begin Training...")
-    X = [get_string_features(path,hasher) for path in malicious_paths + benign_paths]
+    X = [get_iat_features(path,hasher) for path in malicious_paths + benign_paths]
     y = [1 for i in range(len(malicious_paths))] + [0 for i in range(len(benign_paths))]
     classifier = RandomForestClassifier(64)
     classifier.fit(X,y)
@@ -77,6 +91,7 @@ def train_detector(benign_path,malicious_path,hasher):
     pickle.dump((classifier,hasher),open("saved_detector.pkl","wb+"))
     print("End Saving Models...")
 
+# 生成CV图像
 def cv_evaluate(X,y,hasher):
     # use cross-validation to evaluate our model
     import random
@@ -107,6 +122,7 @@ def cv_evaluate(X,y,hasher):
     pyplot.grid()
     pyplot.show()
 
+# 获取正邪文件相关数据
 def get_training_data(benign_path,malicious_path,hasher):
     def get_training_paths(directory):
         targets = []
@@ -115,7 +131,7 @@ def get_training_data(benign_path,malicious_path,hasher):
         return targets
     malicious_paths = get_training_paths(malicious_path)
     benign_paths = get_training_paths(benign_path)
-    X = [get_string_features(path,hasher) for path in malicious_paths + benign_paths]
+    X = [get_iat_features(path,hasher) for path in malicious_paths + benign_paths]
     y = [1 for i in range(len(malicious_paths))] + [0 for i in range(len(benign_paths))]
     return X, y
 
@@ -129,7 +145,7 @@ def main():
 
     args = parser.parse_args()
 
-    hasher = FeatureHasher(20000)
+    hasher = FeatureHasher(1000)
 
     if args.scan_file_path:
         scan_file(args.scan_file_path)
