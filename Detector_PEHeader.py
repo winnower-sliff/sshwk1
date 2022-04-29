@@ -34,12 +34,12 @@ def get_peHeader_features(path, hasher):
     try:
         pe = pefile.PE(path)
     except pefile.PEFormatError:
-        return [0]*30
+        return [0] * 30
     else:
         if hasattr(pe, 'OPTIONAL_HEADER'):
-            oh=str(pe.OPTIONAL_HEADER)
+            oh = str(pe.OPTIONAL_HEADER)
             for line in oh.split('\n')[1:]:
-                peHeader_features+= [int(line.split()[3][2:].lower(),16)]
+                peHeader_features += [int(line.split()[3][2:].lower(), 16)]
 
     # hash the features using the hashing trick
     # hashed_features = hasher.transform([peHeader_features])
@@ -50,7 +50,8 @@ def get_peHeader_features(path, hasher):
     # hashed_features = hashed_features[0]
     #print("Finished Extract String Feature")
     # return hashed string features
-    print("Extracted {0} strings from {1}".format(len(peHeader_features), path))
+    print("Extracted {0} strings from {1}".format(len(peHeader_features),
+                                                  path))
     return peHeader_features
 
 
