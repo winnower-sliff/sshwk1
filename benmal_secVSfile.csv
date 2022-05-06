@@ -1,0 +1,9 @@
+name,type,sectionCount,fileSize
+BenignSample1.exe,Benignware,3,1032192
+BenignSample2.exe,Benignware,3,27648
+BenignSample3.exe,Benignware,4,6144
+BenignSample4.exe,Benignware,11,581120
+MalSample1.exe,Malware,3,105984
+MalSample2.exe,Malware,9,185344
+MalSample3.exe,Malware,5,44168
+MalSample4.exe,Malware,4,136192
